@@ -46,7 +46,7 @@ def main():
     scores = np.zeros(n)
     for i in range(n - win):
         t0 = beat_t[i] if i < len(beat_t) else 0
-        if t0 < 8.0 or t0 > 0.6 * dur:
+        if t0 < 15.0 or t0 > 0.6 * dur:
             continue
         best = 0.0
         for j in range(i + min_lag, n - win):
