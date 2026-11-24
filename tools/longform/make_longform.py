@@ -11,9 +11,12 @@ W = f"/home/claude/lf/{S['slug']}"; os.makedirs(W, exist_ok=True); os.chdir(W)
 def run(*a): subprocess.check_call(list(a))
 fs = sorted(glob.glob(os.path.join(S["folder"], "*_01.wav"))) or sorted(f for f in glob.glob(os.path.join(S["folder"], "*.wav")))
 def name(f): return os.path.basename(f).replace("_01.wav", "").replace(".wav", "")
-orig = [f for f in fs if "(Alternate Version)" not in f]; alt = [f for f in fs if "(Alternate Version)" in f]
-random.Random(3).shuffle(alt)
-rows = [f"{f}|{name(f)}" for f in orig + alt]
+if S.get("tracks"):  # explicit order: list of "path|label" or "path"
+    rows = [t if "|" in t else f"{t}|{name(t)}" for t in S["tracks"]]
+else:
+    orig = [f for f in fs if "(Alternate Version)" not in f]; alt = [f for f in fs if "(Alternate Version)" in f]
+    random.Random(3).shuffle(alt)
+    rows = [f"{f}|{name(f)}" for f in orig + alt]
 open("tracks.txt", "w").write("\n".join(rows) + "\n")
 run("python3", f"{T}/playlist_mix.py", "tracks.txt", "mix1.m4a", "chapters.json", str(S.get("xfade", 3)))
 rep = S.get("repeats", 1)
@@ -32,9 +35,9 @@ run("ffmpeg", "-y", "-loglevel", "error", "-ss", "400", "-t", "25", "-i", "video
 def ts(s):
     s = int(round(s)); h, m = divmod(s, 3600); m, s = divmod(m, 60)
     return f"{m}:{s:02d}" if not h else f"{h}:{m:02d}:{s:02d}"
-ch = c["chapters"] + [[one * k, f"Play-through {k+1}: {c['chapters'][0][1]}"] for k in range(1, rep)]
+ch = c["chapters"] + [[one * k, f"{S.get('play_label','Play-through')} {k+1}: {c['chapters'][0][1]}"] for k in range(1, rep)]
 tl = "\n".join(f"{ts(t)} {n}" for t, n in ch)
-desc = "\n\n".join(S["intro"]) + f"\n\nTracklist\n{tl}\n\n{S['credit']}\nMore at novelgrooves.com\n\n{S['hashtags']}\n"
+desc = "\n\n".join(S["intro"]) + f"\n\n{S.get('tracklist_label','Tracklist')}\n{tl}\n\n{S['credit']}\n{S.get('more_label','More at')} novelgrooves.com\n\n{S['hashtags']}\n"
 assert "—" not in desc
 head = f"Title: {S['title']}\n\nDoelgroep: {'Ja, gemaakt voor kinderen' if S.get('kids') else 'Nee, niet gemaakt voor kinderen'}. Label gewijzigde content: Nee. Zichtbaarheid: Openbaar.\n\n"
 open("youtube-titel-en-beschrijving.txt", "w").write(head + desc)
